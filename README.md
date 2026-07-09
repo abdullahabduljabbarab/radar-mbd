@@ -13,9 +13,29 @@ training simulator: each radar site in the game runs its own instance
 of the generated `radar_step` function, feeding detection decisions
 into the operator's radar scope.
 
+## Waveform profiles
+
+The model ships two swappable waveform profiles selected via
+`model/waveform_params.m`:
+
+- **v1 terminal profile** (`PRF = 4 kHz, tau = 20 us, BW = 1 MHz`)
+  - ASR-9 class medium-PRF, 37.5 km unambig range, ±107 m/s Doppler
+  - Used for the demo plots below (single-target verification)
+
+- **v2 long-range profile** (`PRF = 100 Hz, tau = 100 us, BW = 100 kHz`)
+  - Low-PRF surveillance, 810 nm (1500 km) unambig range
+  - Velocity aliases into ±2.7 m/s so Doppler is unused for matching
+  - Used for the CLEARANCE integration where a single site has to
+    cover a ~1000 nm sector
+
+Same block diagram, same C interface. Regenerating with a different
+profile keeps the wrapper and ThirdParty layout stable so a fleet
+can mix profiles per role (terminal control vs en-route surveillance).
+
 ## What's in the chain
 
-Standard pulsed-radar architecture, textbook block by block:
+Standard pulsed-radar architecture, textbook block by block (values
+shown for the v1 terminal profile):
 
 ```
     +--------------------+
@@ -227,7 +247,12 @@ instance of the generated radar model. Same pattern as the sister
   `CLEARANCE_RADAR_MBD_HAVE_CODEGEN=1`.
 
 `ClearanceRadarMBD` plugin module ships alongside the existing
-`ClearanceAutopilotMBD` module in the CLEARANCE repo.
+`ClearanceAutopilotMBD` module in the CLEARANCE repo. Each
+`AClearanceRadarSite` synthesises an I/Q cube from the live airspace
+state (LFM chirp × per-element steering × per-pulse Doppler for every
+aircraft, plus AWGN), calls `radar_step`, and maps each CFAR
+detection back to its source aircraft by range. Currently ships the
+v2 long-range profile so a single site covers the sector.
 
 ## License
 
