@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Traceability Report - radar</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; color: #24292f; }
+  h1 { margin-bottom: 8px; font-size: 20px; }
+  .subtitle { color: #656d76; margin-bottom: 20px; font-size: 13px; }
+  table { border-collapse: collapse; font-size: 13px; width: 100%; }
+  th, td { border: 1px solid #d0d7de; padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; }
+  td.center { text-align: center; }
+  td.ok { color: #1a7f37; font-weight: 600; }
+  code { font-family: SFMono-Regular, Consolas, monospace; font-size: 12px; }
+  .summary { margin-bottom: 16px; padding: 10px 14px; background: #f6f8fa; border-left: 3px solid #1a7f37; }
+</style>
+
+<h1>Traceability Report for model radar</h1>
+<div class="subtitle">Requirement to block mapping. Every requirement traces to a specific Simulink block or MATLAB kernel; every mapped element carries a verification probe (test in tools/verify_*.m).</div>
+
+<div class="summary">
+  <strong>20 requirements, 20 verified.</strong> Coverage 100%. Every block in the shipped Simulink model and every kernel function has an explicit requirement traced to it. Regression baseline captured in ci_artifacts/simOut_radar_defaults.mat and checked by tools/compare_sim.m.
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>ReqID</th>
+      <th>BlockPath</th>
+      <th>Type</th>
+      <th class="center">Exists</th>
+      <th class="center">HasProbe</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>REQ-RD-001</td><td><code>radar/BeamformStage</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>MVDR beamforming collapses N-element data via covariance inverse</td></tr>
+    <tr><td>REQ-RD-002</td><td><code>model/steering_vector.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Plane-wave steering vector for arbitrary linear array</td></tr>
+    <tr><td>REQ-RD-003</td><td><code>model/mvdr_beamform.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Sample spatial covariance R = (1/K) * rx.^T * conj(rx)</td></tr>
+    <tr><td>REQ-RD-004</td><td><code>model/mvdr_beamform.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Diagonal loading for numerical stability</td></tr>
+    <tr><td>REQ-RD-005</td><td><code>radar/RangeDopplerStage</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Matched-filter pulse compression per pulse</td></tr>
+    <tr><td>REQ-RD-006</td><td><code>model/matched_filter.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Sample index maps directly to target delay with no offset</td></tr>
+    <tr><td>REQ-RD-007</td><td><code>radar/RangeDopplerStage</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Hamming window suppresses Doppler sidelobes</td></tr>
+    <tr><td>REQ-RD-008</td><td><code>model/range_doppler.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Doppler FFT across pulses per range cell</td></tr>
+    <tr><td>REQ-RD-009</td><td><code>model/range_doppler.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>fftshift centres zero-Doppler bin</td></tr>
+    <tr><td>REQ-RD-010</td><td><code>model/range_doppler.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Range axis mapping i*c/(2*fs) metres per sample</td></tr>
+    <tr><td>REQ-RD-011</td><td><code>model/range_doppler.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Velocity axis mapping v = lambda*f_d/2</td></tr>
+    <tr><td>REQ-RD-012</td><td><code>radar/CFARStage</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>CA-CFAR detector with guard cell exclusion</td></tr>
+    <tr><td>REQ-RD-013</td><td><code>model/cfar_ca.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Rohling threshold formula alpha = N_train*(Pfa^(-1/N_train) - 1)</td></tr>
+    <tr><td>REQ-RD-014</td><td><code>model/cfar_ca.m</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Guard cells excluded from noise estimate</td></tr>
+    <tr><td>REQ-RD-015</td><td><code>radar/CFARStage</code></td><td>MATLAB Function</td><td class="center ok">1</td><td class="center ok">1</td><td>Top-K detection sort with SNR against global noise floor</td></tr>
+    <tr><td>REQ-RD-016</td><td><code>radar/rx_cube</code></td><td>Inport</td><td class="center ok">1</td><td class="center ok">1</td><td>Root inport accepts complex IQ data cube</td></tr>
+    <tr><td>REQ-RD-017</td><td><code>radar/look_angle_rad</code></td><td>Inport</td><td class="center ok">1</td><td class="center ok">1</td><td>Root inport accepts steering direction in radians</td></tr>
+    <tr><td>REQ-RD-018</td><td><code>radar/tx</code></td><td>Inport</td><td class="center ok">1</td><td class="center ok">1</td><td>Root inport accepts transmit reference chirp</td></tr>
+    <tr><td>REQ-RD-019</td><td><code>radar/det_range_m</code></td><td>Outport</td><td class="center ok">1</td><td class="center ok">1</td><td>Root outport exposes detection range for up to 16 hits</td></tr>
+    <tr><td>REQ-RD-020</td><td><code>radar/n_detections</code></td><td>Outport</td><td class="center ok">1</td><td class="center ok">1</td><td>Root outport exposes actual detection count as int32</td></tr>
+  </tbody>
+</table>

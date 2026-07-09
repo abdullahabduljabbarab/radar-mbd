@@ -1,0 +1,21 @@
+ReqID,BlockPath,BlockType,Exists,HasProbe,Description
+REQ-RD-001,radar/BeamformStage,MATLAB Function,1,1,MVDR beamforming collapses N-element data via covariance inverse
+REQ-RD-002,model/steering_vector.m,MATLAB Function,1,1,Plane-wave steering vector for arbitrary linear array
+REQ-RD-003,model/mvdr_beamform.m,MATLAB Function,1,1,Sample spatial covariance R = (1/K) * rx.^T * conj(rx)
+REQ-RD-004,model/mvdr_beamform.m,MATLAB Function,1,1,Diagonal loading for numerical stability
+REQ-RD-005,radar/RangeDopplerStage,MATLAB Function,1,1,Matched-filter pulse compression per pulse
+REQ-RD-006,model/matched_filter.m,MATLAB Function,1,1,Sample index maps directly to target delay with no offset
+REQ-RD-007,radar/RangeDopplerStage,MATLAB Function,1,1,Hamming window suppresses Doppler sidelobes
+REQ-RD-008,model/range_doppler.m,MATLAB Function,1,1,Doppler FFT across pulses per range cell
+REQ-RD-009,model/range_doppler.m,MATLAB Function,1,1,fftshift centres zero-Doppler bin
+REQ-RD-010,model/range_doppler.m,MATLAB Function,1,1,Range axis mapping i*c/(2*fs) metres per sample
+REQ-RD-011,model/range_doppler.m,MATLAB Function,1,1,Velocity axis mapping v = lambda*f_d/2
+REQ-RD-012,radar/CFARStage,MATLAB Function,1,1,CA-CFAR detector with guard cell exclusion
+REQ-RD-013,model/cfar_ca.m,MATLAB Function,1,1,Rohling threshold formula alpha = N_train*(Pfa^(-1/N_train) - 1)
+REQ-RD-014,model/cfar_ca.m,MATLAB Function,1,1,Guard cells excluded from noise estimate
+REQ-RD-015,radar/CFARStage,MATLAB Function,1,1,Top-K detection sort with SNR against global noise floor
+REQ-RD-016,radar/rx_cube,Inport,1,1,Root inport accepts complex IQ data cube
+REQ-RD-017,radar/look_angle_rad,Inport,1,1,Root inport accepts steering direction in radians
+REQ-RD-018,radar/tx,Inport,1,1,Root inport accepts transmit reference chirp
+REQ-RD-019,radar/det_range_m,Outport,1,1,Root outport exposes detection range for up to 16 hits
+REQ-RD-020,radar/n_detections,Outport,1,1,Root outport exposes actual detection count as int32
