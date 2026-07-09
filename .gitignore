@@ -1,0 +1,64 @@
+# MATLAB / Simulink build + cache output.
+# Nothing here is source of truth - the .slx model file is. - TripleA
+
+# ---- Simulink build project cache ----
+slprj/
+sccprj/
+*.slxc
+*.slx.autosave
+*.slx.original
+
+# ---- Simulink code-generation output ----
+# The generated C tree lives under slprj/ by default; it also gets copied
+# to codegen_out/ by the CI job. We upload it as an artefact instead of
+# committing it - regenerated deterministically from the model.
+codegen_out/
+radar_ert_rtw/
+beamformer_ert_rtw/
+
+# ---- Timestamped autosave backups ----
+radar_upgraded_*.slx
+radar_upgraded_*.slxc
+apply_upgrades_log.txt
+
+# ---- MATLAB session / editor scratch ----
+*.asv
+*.autosave
+*.m~
+*.mex*
+octave-workspace
+
+# ---- Coder + Embedded Coder intermediates ----
+*.tlc.log
+buildInfo.mat
+codeInfo.mat
+rtwlog.txt
+html/
+_coder/
+codegen/
+
+# ---- Simulation output that isn't archived by CI ----
+# CI outputs land under ci_artifacts/ and are uploaded as workflow
+# artefacts. Anything OUTSIDE ci_artifacts/ is transient.
+*.mat.tmp
+*.log
+
+# ---- Range-Doppler / spectrogram figure exports outside docs/img ----
+range_doppler_*.png
+spectrogram_*.png
+matched_filter_*.png
+*.fig
+
+# ---- MATLAB project / SVN artefacts ----
+resources/project/
+.SimulinkProject/
+_TemporaryItems/
+
+# ---- OS + editor cruft ----
+Thumbs.db
+.DS_Store
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~

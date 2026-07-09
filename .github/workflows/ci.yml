@@ -1,0 +1,74 @@
+# Simulink radar signal-processing CI.
+#
+# Same pattern as the autopilot-mbd repo: gated to manual dispatch
+# until MATLAB licensing on the GitHub-hosted runner is sorted. See
+# CLEARANCE's Docs/CI_CD_NOTES.md for the strategy.
+
+name: CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  model-tests-and-codegen:
+    name: Model tests + Embedded Coder codegen
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          products: >
+            Simulink
+            DSP_System_Toolbox
+            Phased_Array_System_Toolbox
+            Embedded_Coder
+            MATLAB_Coder
+            Simulink_Coder
+
+      - name: Run model tests + smoke sim
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath(genpath(pwd));
+            cd('tools');
+            run_model_tests_and_build;
+            exit(0);
+
+      - name: Generate C code (Embedded Coder)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath(genpath(pwd));
+            model = 'radar';
+            load_system(model);
+            set_param(model, 'SystemTargetFile', 'ert.tlc');
+            set_param(model, 'GenCodeOnly', 'on');
+            rtwbuild(model);
+            outDir = fullfile(pwd, 'codegen_out');
+            if isfolder(outDir); rmdir(outDir, 's'); end
+            mkdir(outDir);
+            copyfile(fullfile('slprj', 'ert', model, '*.c'), outDir);
+            copyfile(fullfile('slprj', 'ert', model, '*.h'), outDir);
+            exit(0);
+
+      - name: Upload sim + verification artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-sim-artefacts
+          path: |
+            ci_artifacts/
+            docs/img/
+          if-no-files-found: warn
+
+      - name: Upload generated C code
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-generated-c
+          path: codegen_out/
+          if-no-files-found: error
