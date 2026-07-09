@@ -27,10 +27,16 @@ Ts   = 1 / fs;          % sample period (s)
 Nspp = round(tau * fs); % samples per pulse (128 at these numbers)
 
 % ---- Pulse repetition ----
-PRF  = 1000;            % pulse repetition frequency (Hz)  - 1 kHz
-PRI  = 1 / PRF;         % pulse repetition interval  (s)   - 1 ms
+% Medium-PRF surveillance: 4 kHz balances unambiguous range vs
+% unambiguous velocity for the airliner regime. At PRF = 4 kHz:
+%   R_unamb = c * PRI / 2       = 37.5 km   (targets to 37.5 km unambig)
+%   v_unamb = lambda / (4 * PRI) = +/-107 m/s (>= typical airliner speed)
+% Real long-range radars stagger PRF to disambiguate targets beyond
+% these limits; a single PRF is enough for the demo. - TripleA
+PRF  = 4000;            % pulse repetition frequency (Hz) - 4 kHz
+PRI  = 1 / PRF;         % pulse repetition interval  (s)  - 250 us
 
-% Unambiguous range: c * PRI / 2. At PRI = 1 ms: 150 km.
+% Unambiguous range: c * PRI / 2. At PRI = 250 us: 37.5 km.
 R_max_unamb = c * PRI / 2;
 
 % ---- Coherent processing interval (CPI) ----
