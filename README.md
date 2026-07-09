@@ -1,112 +1,110 @@
 # radar-mbd
 
-Model-Based Design of a **pulsed radar signal-processing chain** in
-Simulink. Waveform generation, matched-filter pulse compression,
-range-Doppler processing, CFAR detection, and phased-array
-beamforming. Auto-code-generated to portable C via Embedded Coder
-with reusable-function packaging, so every radar site in the
-downstream ATC simulator carries its own instance of the DSP chain
-without shared globals.
+Model-Based Design of a pulsed radar signal processor in Simulink.
+LFM waveform, 8-element phased array with MVDR adaptive beamforming,
+matched-filter pulse compression, 2D range-Doppler processing, and
+CA-CFAR detection - all authored from the analytic formulae as MATLAB
+Function blocks so the generated C is pure ANSI with zero external
+toolbox library dependencies. Auto-code-generated via Embedded Coder
+with reusable-function packaging.
 
-Integrated live into the [CLEARANCE](https://github.com/) ATC
-simulator: every `AClearanceRadarSite` runs the Simulink-generated
-signal processing pipeline on incoming IQ samples, feeding detection
-decisions back into the operator's radar scope.
+Integrated into the [CLEARANCE](https://github.com/) ATC / defence
+training simulator: each radar site in the game runs its own instance
+of the generated `radar_step` function, feeding detection decisions
+into the operator's radar scope.
 
 ## What's in the chain
 
-Standard pulsed-radar architecture:
+Standard pulsed-radar architecture, textbook block by block:
 
 ```
     +--------------------+
-    | LFM waveform gen   |  chirp pulse, configurable BW + tau
+    | LFM waveform gen   |  chirp pulse, tau = 20 us, BW = 1 MHz
     +--------------------+
              |
              v
     +--------------------+
-    | Phased array Tx    |  beamforming + steering, 8-16 element ULA
+    | Target scene       |  simulated receive window; delayed chirp
+    |                    |  copies phase-shifted by steering vector
+    |                    |  across 8-element ULA + AWGN
     +--------------------+
              |
-             v
-         (channel)          IQ samples returned from target scene
-             |
-             v
+             v (Nspp x 8 x 16 complex data cube per CPI)
     +--------------------+
-    | Phased array Rx    |  adaptive beamforming (MVDR)
+    | MVDR beamformer    |  adaptive: R^-1 a / (a^H R^-1 a),
+    |                    |  places a null on jammers
     +--------------------+
              |
-             v
+             v (Nspp x 16 single-channel per CPI)
     +--------------------+
-    | Matched filter     |  pulse compression - correlates against
-    |                    |  the transmitted chirp
-    +--------------------+
-             |
-             v
-    +--------------------+
-    | Range-Doppler proc |  2D FFT: fast-time -> range,
-    |                    |  slow-time -> Doppler
+    | Matched filter     |  pulse compression, 13 dB gain from
+    | (per pulse)        |  time-bandwidth product tau*BW = 20
     +--------------------+
              |
              v
     +--------------------+
-    | CFAR detector      |  cell-averaging threshold, constant
-    |                    |  false-alarm rate
+    | Doppler FFT        |  Hamming-windowed slow-time transform,
+    | (across pulses)    |  coherent integration lifts target
+    |                    |  another 12 dB (10*log10(16))
+    +--------------------+
+             |
+             v (range-Doppler map, Nspp x 16)
+    +--------------------+
+    | CA-CFAR detector   |  Rohling formula
+    |                    |  alpha = Nt*(Pfa^(-1/Nt) - 1)
     +--------------------+
              |
              v
-       Detection decisions (range, velocity, azimuth per hit)
+       Detection list  (range, velocity, SNR per hit, up to 16)
 ```
 
-## Design choices
+## The Simulink model
 
-- **S-band, 3 GHz nominal** - typical civil surveillance / long-range
-  air-defence band. Configurable in `model/radar_params.m`.
-- **LFM chirp, 1 microsecond pulse, 1 MHz bandwidth** - matches the
-  ASR-9 baseline used in CLEARANCE's C++ radar equation module.
-- **8-element uniform linear array** - enough for meaningful beam
-  steering + null placement without runtime cost the ATC sim can't
-  afford.
-- **MVDR beamforming on receive** - adaptive null in the direction of
-  a jammer, gain toward the target. Compares against static
-  broadside beam for the demo A/B.
-- **Cell-averaging CFAR** - the industry-standard detector. Trained
-  on cells around the cell under test, threshold set from a target
-  false-alarm rate.
+![Radar model signal flow](docs/img/radar_model.png)
 
-## Integration with CLEARANCE
+*Three MATLAB Function block stages in visible signal flow:
+`BeamformStage` collapses 8-element array data to single-channel via
+MVDR, `RangeDopplerStage` runs matched-filter pulse compression then
+Doppler FFT across pulses, `CFARStage` runs cell-averaging CFAR and
+extracts a top-K detection list. Model programmatically constructed
+by `tools/build_radar_model.m` to avoid block-editor errors.*
 
-`ClearanceRadarMBD` UE plugin module. Same architecture pattern as
-the sister `ClearanceAutopilotMBD` module:
+Reusable-function code packaging so each consumer allocates its own
+`RT_MODEL_radar_T` state - no shared globals across instances. Every
+physical parameter (element positions, wavelength, sample rate, PRI,
+CFAR thresholds) is baked as a constant inside its block so the
+generated C has zero external state dependencies.
 
-- Per-instance model state - each radar site allocates its own
-  `RT_MODEL_radar_T` on first use, so a fleet of radars run
-  concurrently without shared globals.
-- `AutopilotGeneratedUnit.cpp`-style compilation shim under
-  `extern "C"` so UBT compiles the generated `.c` as part of the
-  module.
-- `Build.cs` auto-detects the drop-in and flips
-  `CLEARANCE_RADAR_MBD_HAVE_CODEGEN=1`.
+## MVDR adaptive beamforming
 
-## Repository layout
+![Beam patterns and matched-filter output before/after MVDR](docs/img/beamformer.png)
 
-```
-radar_repo/
-|-- radar.slx                          <-- Simulink model (source of truth)
-|-- model/
-|   |-- radar_params.m                 <-- Pt, Gt, Gr, lambda, sigma, R, L
-|   |-- waveform_params.m              <-- pulse tau, bandwidth, PRF
-|   `-- array_params.m                 <-- element count, spacing, steering
-|-- tools/
-|   |-- run_model_tests_and_build.m    <-- CI entry point
-|   |-- compare_sim.m                  <-- tolerance-based regression
-|   |-- configure_reusable_function.m  <-- switch code interface to reusable
-|   `-- generate_range_doppler.m       <-- IQ scene generator for the demo
-|-- ci_artifacts/                      <-- smoke sim outputs
-|-- docs/
-|   |-- RADAR_MBD_DESIGN.md
-|   `-- img/                           <-- README figures
-`-- .github/workflows/ci.yml           <-- MATLAB CI pipeline
-```
+*Top: beam patterns. Solid blue = static delay-and-sum with a normal
+sidelobe pattern; dashed orange = adaptive MVDR steered at the target
+angle, carving a ~40 dB deep null at the jammer angle. Middle: matched
+filter output after DAS - jammer noise dominates, ~8 dB target SNR.
+Bottom: matched filter output after MVDR - clean noise floor, sharp
+36 dB target peak. 28 dB SNR improvement from adaptive nulling on the
+same signal.*
+
+## Range-Doppler + CFAR
+
+![Range-Doppler map with CFAR detections](docs/img/range_doppler.png)
+
+*Top: 2D range-Doppler map after MVDR beamforming, matched-filter
+compression, and Hamming-windowed slow-time FFT. Bright yellow-green
+spot at (60 m/s, 30 km) is the target's coherent-integration peak
+from 16 pulses. Bottom: same map with red squares overlaid on CA-CFAR
+detections - detector nailed the target with 11 hits clustered on
+the peak.*
+
+## Traceability
+
+![Traceability coverage](docs/img/traceability.png)
+
+*20 REQ-RD-* entries traced to every Simulink block, every MATLAB
+kernel, and every root port. 100% coverage; every mapped element has
+a verification probe under `tools/verify_*.m`.*
 
 ## Getting started
 
@@ -114,28 +112,101 @@ Open `radar.slx` in Simulink R2023b or later with these toolboxes:
 
 - Simulink
 - DSP System Toolbox
-- Phased Array System Toolbox
+- Signal Processing Toolbox
 - Embedded Coder
 - MATLAB Coder
 - Simulink Coder
 
-Run smoke sim + regression check:
+Load parameters and run the five verification scripts:
 
 ```matlab
 addpath(genpath(pwd))
 run('model/radar_params.m')
 run('model/waveform_params.m')
 run('model/array_params.m')
-sim('radar')
-tools/compare_sim
+verify_lfm_waveform
+verify_matched_filter
+verify_beamformer
+verify_range_doppler
+verify_radar_dsp
 ```
 
-Generate C for integration:
+Freeze the regression baseline (once, then check it every subsequent
+run):
 
 ```matlab
-run('tools/configure_reusable_function.m')
+save_reference_baseline
+compare_sim
+```
+
+Generate C for CLEARANCE integration:
+
+```matlab
+build_radar_model
 rtwbuild('radar')
 ```
+
+Output lands under `radar_ert_rtw/`. The five files CLEARANCE needs
+are `radar.c`, `radar.h`, `radar_types.h`, `radar_private.h`,
+`rtwtypes.h`, plus `rt_nonfinite.h/c` for the NaN handling.
+
+## Repository layout
+
+```
+radar_repo/
+|-- radar.slx                          <-- Simulink model (source of truth)
+|-- model/
+|   |-- radar_params.m                 <-- Pt, Gt, Gr, fc, lambda, L, T, NF
+|   |-- waveform_params.m              <-- tau, BW, fs, PRF, CPI
+|   |-- array_params.m                 <-- N_el, d, x_elements, mvdr_load
+|   |-- lfm_waveform.m                 <-- chirp generator
+|   |-- steering_vector.m              <-- plane-wave phase pattern
+|   |-- matched_filter.m               <-- pulse compression, causal-slice
+|   |-- target_scene.m                 <-- single-element scene
+|   |-- target_scene_array.m           <-- N-element scene
+|   |-- multi_pulse_scene.m            <-- 3D cube with Doppler
+|   |-- mvdr_beamform.m                <-- Capon weights
+|   |-- range_doppler.m                <-- matched filter + Doppler FFT + axes
+|   |-- cfar_ca.m                      <-- Rohling threshold, scalar-only
+|   `-- radar_dsp.m                    <-- top-level codegen entry
+|-- tools/
+|   |-- build_radar_model.m            <-- programmatic Simulink build
+|   |-- save_reference_baseline.m      <-- freezes ci_artifacts/simOut
+|   |-- compare_sim.m                  <-- regression check
+|   |-- run_model_tests_and_build.m    <-- CI entry point
+|   |-- verify_lfm_waveform.m
+|   |-- verify_matched_filter.m
+|   |-- verify_beamformer.m
+|   |-- verify_range_doppler.m
+|   `-- verify_radar_dsp.m
+|-- ci_artifacts/
+|   `-- simOut_radar_defaults.mat      <-- deterministic regression baseline
+|-- req_map.csv                        <-- 20 REQ-RD-* entries
+|-- traceability_report.csv            <-- machine-readable
+|-- traceability_report.html           <-- styled HTML
+|-- docs/
+|   `-- img/                           <-- README figures
+`-- .github/workflows/ci.yml           <-- MATLAB CI pipeline
+```
+
+## Integration with CLEARANCE
+
+Every `AClearanceRadarSite` in the ATC simulator will run its own
+instance of the generated radar model. Same pattern as the sister
+`autopilot-mbd` repo's integration into CLEARANCE:
+
+- Per-instance model state - each radar site allocates its own
+  `RT_MODEL_radar_T` on first use, so a fleet of radars runs
+  concurrently without shared globals.
+- Compilation shim under `extern "C"` so UE's build system compiles
+  the generated `.c` as part of a UE plugin module without needing a
+  per-file compilation rule.
+- `Build.cs` auto-detects the presence of the generated `include/`
+  and `src/` directories under `ThirdParty/RadarGenerated/` and flips
+  `CLEARANCE_RADAR_MBD_HAVE_CODEGEN=1`.
+
+`ClearanceRadarMBD` plugin module ships alongside the existing
+`ClearanceAutopilotMBD` module in the CLEARANCE repo.
 
 ## License
 
