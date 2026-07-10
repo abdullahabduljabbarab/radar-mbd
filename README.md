@@ -254,6 +254,16 @@ aircraft, plus AWGN), calls `radar_step`, and maps each CFAR
 detection back to its source aircraft by range. Currently ships the
 v2 long-range profile so a single site covers the sector.
 
+## Video walkthrough
+
+Full technical walkthrough covering this radar model alongside its
+sister [autopilot-mbd](https://github.com/abdullahabduljabbarab/autopilot-mbd)
+Simulink model: model authoring, Embedded Coder code generation,
+reusable-function packaging, and live integration into the CLEARANCE
+UE5 simulator with every radar site running the generated DSP chain.
+
+https://youtu.be/nqjFOimsYHw
+
 ## License
 
 MIT - see [`LICENSE`](LICENSE).
