@@ -7,6 +7,14 @@
 fprintf('=== radar-mbd CI ===\n');
 fprintf('MATLAB %s\n', version);
 
+% MATLAB's `run` command cd's to the script's directory before executing,
+% so when this script starts, CWD is `tools/` regardless of what the
+% caller did. The `run('model/...')` calls below use paths relative to
+% the repo root, so cd there first.
+this_dir  = fileparts(mfilename('fullpath'));
+repo_root = fileparts(this_dir);
+cd(repo_root);
+
 % Load parameters into base workspace
 run('model/radar_params.m');
 run('model/waveform_params.m');
