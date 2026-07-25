@@ -63,13 +63,18 @@ jobs:
       # rebuilds the model, and attempts rtwbuild. Codegen inside the
       # script is best-effort under `try/catch` for the same licensing
       # reason called out at the top of this workflow.
+      #
+      # IMPORTANT: don't `cd('tools')` before running this script —
+      # the script has `run('model/radar_params.m')` calls that
+      # resolve relative to the current working directory, so we
+      # need to be at the repo root when they execute. The script
+      # is invoked by its path via `run tools/...` instead.
       - name: Run model tests + smoke sim
         uses: matlab-actions/run-command@v2
         with:
           command: >
             addpath(genpath(pwd));
-            cd('tools');
-            run_model_tests_and_build;
+            run tools/run_model_tests_and_build;
             exit(0);
 
       # Standalone Embedded Coder codegen step deliberately removed.
