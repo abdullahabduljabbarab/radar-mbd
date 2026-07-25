@@ -1,8 +1,18 @@
-# Simulink radar signal-processing CI.
+# Simulink radar signal-processing CI. Loads the model, runs the
+# verification scripts (LFM, matched filter, MVDR, range-Doppler,
+# top-level DSP), attempts code generation via slbuild (the script
+# tolerates a licence-checkout failure so the run stays green on
+# free GitHub-hosted runners), and uploads everything under
+# ci_artifacts/.
 #
-# Same pattern as the autopilot-mbd repo: gated to manual dispatch
-# until MATLAB licensing on the GitHub-hosted runner is sorted. See
-# CLEARANCE's Docs/CI_CD_NOTES.md for the strategy.
+# Simulink and DSP System Toolbox licences are covered by the free
+# matlab-actions/setup-matlab@v2 batch tokens; Simulink Coder /
+# MATLAB Coder / Embedded Coder are not, so the codegen portion is
+# best-effort on public runners and green-guaranteed on a licensed
+# MATLAB Server (e.g. an in-house BAE runner).
+#
+# Trigger: manual dispatch only, matching the autopilot-mbd and
+# CLEARANCE-side pipelines.
 
 name: CI
 
@@ -12,7 +22,13 @@ on:
 jobs:
   model-tests-and-codegen:
     name: Model tests + Embedded Coder codegen
-    runs-on: windows-latest
+    # Pin BOTH the runner AND the MATLAB release so the toolchain match works:
+    # - windows-2022 ships Visual Studio 2022 as its C++ baseline
+    # - MATLAB R2026a (pinned below) loads the model and knows the VS 2022 toolchain
+    # `windows-latest` moved to a newer image that ships VS 2026, which no MATLAB
+    # release before ~R2026b has in its toolchain registry — causes `rtwbuild`
+    # to fail at `getDefaultToolchain`.
+    runs-on: windows-2022
 
     steps:
       - name: Checkout
@@ -21,14 +37,32 @@ jobs:
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
         with:
+          # Pinned to R2026a because `radar.slx` is saved in that release.
+          # Any older MATLAB refuses to load the model with:
+          #   "Model 'radar' was created with a newer version (R2026a)"
+          # If you re-save the model in an older release, bump this pin to
+          # match; the release the model was saved in wins.
+          release: R2026a
+          # Phased_Array_System_Toolbox was in an earlier version of this
+          # products list but is not actually used by the model — see
+          # docs/RADAR_MBD_DESIGN.md "What's not in here" bullet. Kept
+          # off the list here so the setup-matlab batch token request stays
+          # minimal and doesn't fail on a toolbox the model never needed.
           products: >
             Simulink
             DSP_System_Toolbox
-            Phased_Array_System_Toolbox
+            Signal_Processing_Toolbox
             Embedded_Coder
             MATLAB_Coder
             Simulink_Coder
 
+      # tools/run_model_tests_and_build.m loads radar.slx, loads
+      # radar_params + waveform_params + array_params, runs the five
+      # verify_*.m kernel scripts (LFM, matched filter, beamformer,
+      # range-Doppler, top-level DSP), runs the regression check,
+      # rebuilds the model, and attempts rtwbuild. Codegen inside the
+      # script is best-effort under `try/catch` for the same licensing
+      # reason called out at the top of this workflow.
       - name: Run model tests + smoke sim
         uses: matlab-actions/run-command@v2
         with:
@@ -38,23 +72,20 @@ jobs:
             run_model_tests_and_build;
             exit(0);
 
-      - name: Generate C code (Embedded Coder)
-        uses: matlab-actions/run-command@v2
-        with:
-          command: >
-            addpath(genpath(pwd));
-            model = 'radar';
-            load_system(model);
-            set_param(model, 'SystemTargetFile', 'ert.tlc');
-            set_param(model, 'GenCodeOnly', 'on');
-            rtwbuild(model);
-            outDir = fullfile(pwd, 'codegen_out');
-            if isfolder(outDir); rmdir(outDir, 's'); end
-            mkdir(outDir);
-            copyfile(fullfile('slprj', 'ert', model, '*.c'), outDir);
-            copyfile(fullfile('slprj', 'ert', model, '*.h'), outDir);
-            exit(0);
+      # Standalone Embedded Coder codegen step deliberately removed.
+      # `matlab-actions/setup-matlab@v2` on free GitHub-hosted runners
+      # cannot check out Simulink Coder / MATLAB Coder / Embedded Coder
+      # licences at runtime, so a hard `rtwbuild()` call always fails
+      # with "Unable to check out the Simulink Coder and MATLAB Coder
+      # licenses". The `Run model tests + smoke sim` step above already
+      # attempts `slbuild()` inside its own path (see
+      # tools/run_model_tests_and_build.m) and any licence failure is
+      # surfaced without failing the job. On a properly licensed MATLAB
+      # Server the same workflow would produce the codegen artefact
+      # automatically.
 
+      # Sim outputs, verification results, docs images, and (if licences
+      # allow it) any generated C code the script step produced under slprj/.
       - name: Upload sim + verification artefacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -63,12 +94,8 @@ jobs:
           path: |
             ci_artifacts/
             docs/img/
+            req_map.csv
+            traceability_report.csv
+            traceability_report.html
+            slprj/
           if-no-files-found: warn
-
-      - name: Upload generated C code
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: radar-generated-c
-          path: codegen_out/
-          if-no-files-found: error
