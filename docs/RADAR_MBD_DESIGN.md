@@ -47,18 +47,40 @@ pulse would give more SNR gain at the cost of larger blind range
 right after transmit; 20 us is on the short side of a "long"
 surveillance chirp but readable for verification plots.
 
-### 4 kHz PRF (medium-PRF surveillance)
+### Two shippable waveform profiles
 
-Balances range and velocity ambiguity for the airliner regime:
+The model ships two profiles, both selected via
+`model/waveform_params.m`. Same block diagram, same C interface, so
+the generated `radar_step` entry point is source-compatible between
+them and the CLEARANCE wrapper needs no changes to switch.
+
+**v1 terminal profile** — `PRF = 4 kHz, tau = 20 us, BW = 1 MHz`.
+Medium-PRF surveillance for the airliner regime. Balances range and
+velocity ambiguity:
 
     R_max_unamb = c * PRI / 2       = 37.5 km    (targets to 37.5 km unambig)
     v_max_unamb = lambda / (4*PRI)  = +/-107 m/s (covers 250 kt typical)
 
-Real long-range radars stagger PRF to disambiguate beyond these
-limits; single PRF is enough for the demo. Aliasing at 1 kHz PRF
-(the value initially in `waveform_params.m`) was the reason for
-the medium-PRF switch: a 100 m/s target aliased into a -7 m/s
-Doppler bin.
+Aliasing at 1 kHz PRF (the value initially in `waveform_params.m`)
+was the reason for the medium-PRF switch: a 100 m/s target aliased
+into a -7 m/s Doppler bin. Used for the single-target verification
+plots in the README.
+
+**v2 long-range profile** — `PRF = 100 Hz, tau = 100 us, BW = 100 kHz`.
+Low-PRF surveillance for the CLEARANCE integration where a single
+site has to cover a ~1000 nm sector:
+
+    R_max_unamb = c * PRI / 2       = 1500 km   (810 nm unambig)
+    v_max_unamb = lambda / (4*PRI)  = +/-2.7 m/s
+
+Velocity aliases into the ±2.7 m/s range so Doppler is effectively
+unused for target matching in this profile — CLEARANCE relies on
+range and beam-angle for track association. This is the profile
+shipping in the current CLEARANCE integration.
+
+Real long-range surveillance rigs stagger PRF across a burst to
+disambiguate beyond a single PRI's constraints; the v2 profile does
+not do this. Adding PRF staggering would be a natural extension.
 
 ### 8-element uniform linear array, lambda/2 spacing
 

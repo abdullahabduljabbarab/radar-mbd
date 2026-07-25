@@ -13,8 +13,7 @@ sccprj/
 # to codegen_out/ by the CI job. We upload it as an artefact instead of
 # committing it - regenerated deterministically from the model.
 codegen_out/
-radar_ert_rtw/
-beamformer_ert_rtw/
+*_ert_rtw/
 
 # ---- Timestamped autosave backups ----
 radar_upgraded_*.slx
