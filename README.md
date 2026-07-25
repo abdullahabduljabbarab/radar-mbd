@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/abdullahabduljabbarab/radar-mbd/actions/workflows/ci.yml/badge.svg)](https://github.com/abdullahabduljabbarab/radar-mbd/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![MATLAB R2023b+](https://img.shields.io/badge/MATLAB-R2023b%2B-orange.svg)](https://www.mathworks.com/products/matlab.html)
+[![MATLAB R2026a+](https://img.shields.io/badge/MATLAB-R2026a%2B-orange.svg)](https://www.mathworks.com/products/matlab.html)
 
 Model-Based Design of a pulsed radar signal processor in Simulink.
 LFM waveform, 8-element phased array with MVDR adaptive beamforming,
@@ -203,7 +203,7 @@ antenna patterns, Swerling target models, certification artefacts).
 
 ## Getting started
 
-Open `radar.slx` in Simulink R2023b or later with these toolboxes:
+Open `radar.slx` in Simulink R2026a or later with these toolboxes:
 
 - Simulink
 - DSP System Toolbox
