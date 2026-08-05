@@ -26,7 +26,7 @@ jobs:
     # - windows-2022 ships Visual Studio 2022 as its C++ baseline
     # - MATLAB R2026a (pinned below) loads the model and knows the VS 2022 toolchain
     # `windows-latest` moved to a newer image that ships VS 2026, which no MATLAB
-    # release before ~R2026b has in its toolchain registry — causes `rtwbuild`
+    # release before ~R2026b has in its toolchain registry: causes `rtwbuild`
     # to fail at `getDefaultToolchain`.
     runs-on: windows-2022
 
@@ -44,7 +44,7 @@ jobs:
           # match; the release the model was saved in wins.
           release: R2026a
           # Phased_Array_System_Toolbox was in an earlier version of this
-          # products list but is not actually used by the model — see
+          # products list but is not actually used by the model: see
           # docs/RADAR_MBD_DESIGN.md "What's not in here" bullet. Kept
           # off the list here so the setup-matlab batch token request stays
           # minimal and doesn't fail on a toolbox the model never needed.
@@ -64,7 +64,7 @@ jobs:
       # script is best-effort under `try/catch` for the same licensing
       # reason called out at the top of this workflow.
       #
-      # IMPORTANT: don't `cd('tools')` before running this script —
+      # IMPORTANT: don't `cd('tools')` before running this script :
       # the script has `run('model/radar_params.m')` calls that
       # resolve relative to the current working directory, so we
       # need to be at the repo root when they execute. The script

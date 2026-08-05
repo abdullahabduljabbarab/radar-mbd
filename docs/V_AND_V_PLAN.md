@@ -1,4 +1,4 @@
-# Verification and Validation Plan — radar-mbd
+# Verification and Validation Plan: radar-mbd
 
 Companion to [`../req_map.csv`](../req_map.csv) (the source-of-truth requirement-to-block mapping) and [`../traceability_report.html`](../traceability_report.html) (the rendered coverage matrix). If `req_map.csv` answers "what is the model supposed to do?", this doc answers "how do we prove it does?".
 
@@ -33,7 +33,7 @@ Three tiers, each covering different requirement classes at different cost.
 
 | Tier | Definition | Cost | Where they live | When to use |
 |---|---|---|---|---|
-| **T1 Verification-script probes** | Analytic-formula checks in `verify_*.m` scripts: build a canonical input (chirp, single target, known steering vector), run the block or kernel, assert numeric properties (instantaneous-frequency slope, matched-filter peak location and gain, MVDR null depth, CFAR false-alarm rate over Monte Carlo). | Low. Sub-second per script. | `tools/verify_lfm_waveform.m`, `tools/verify_matched_filter.m`, `tools/verify_beamformer.m`, `tools/verify_range_doppler.m`, `tools/verify_radar_dsp.m` — each cited from `req_map.csv`. | Any pure-model or pure-kernel requirement. |
+| **T1 Verification-script probes** | Analytic-formula checks in `verify_*.m` scripts: build a canonical input (chirp, single target, known steering vector), run the block or kernel, assert numeric properties (instantaneous-frequency slope, matched-filter peak location and gain, MVDR null depth, CFAR false-alarm rate over Monte Carlo). | Low. Sub-second per script. | `tools/verify_lfm_waveform.m`, `tools/verify_matched_filter.m`, `tools/verify_beamformer.m`, `tools/verify_range_doppler.m`, `tools/verify_radar_dsp.m`: each cited from `req_map.csv`. | Any pure-model or pure-kernel requirement. |
 | **T2 Regression against baseline** | `tools/compare_sim.m` loads `ci_artifacts/simOut_radar_defaults.mat` (the frozen reference), reruns the model, asserts each output within tolerance. Catches accidental drift from any parameter or block reconfiguration. | Low-medium. Requires a fresh Simulink session but runs headless. | `tools/compare_sim.m`, `tools/save_reference_baseline.m` (to refresh the baseline after an intentional design change), `tools/run_model_tests_and_build.m` (CI entry point). | Whole-model integrity checks after any config change. |
 | **T3 Code-generation + integration** | `rtwbuild('radar')` generates C, CLEARANCE builds the wrapper, radar site runs the generated `radar_step` inside the sim, feeding CFAR detections into the operator's radar scope. Any behavioural regression versus pure-model sim is caught by scope-side observation (missed target, false-alarm rain, range-cell drift). | High. Requires full toolchain and CLEARANCE build. | Model integration lives in CLEARANCE's `ClearanceRadarMBD` plugin; `.github/workflows/ci.yml` covers the code-generation half. | Every release. Every waveform-profile change. |
 

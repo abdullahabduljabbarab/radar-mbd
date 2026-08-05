@@ -54,7 +54,7 @@ The model ships two profiles, both selected via
 the generated `radar_step` entry point is source-compatible between
 them and the CLEARANCE wrapper needs no changes to switch.
 
-**v1 terminal profile** — `PRF = 4 kHz, tau = 20 us, BW = 1 MHz`.
+**v1 terminal profile**: `PRF = 4 kHz, tau = 20 us, BW = 1 MHz`.
 Medium-PRF surveillance for the airliner regime. Balances range and
 velocity ambiguity:
 
@@ -66,7 +66,7 @@ was the reason for the medium-PRF switch: a 100 m/s target aliased
 into a -7 m/s Doppler bin. Used for the single-target verification
 plots in the README.
 
-**v2 long-range profile** — `PRF = 100 Hz, tau = 100 us, BW = 100 kHz`.
+**v2 long-range profile**: `PRF = 100 Hz, tau = 100 us, BW = 100 kHz`.
 Low-PRF surveillance for the CLEARANCE integration where a single
 site has to cover a ~1000 nm sector:
 
@@ -74,7 +74,7 @@ site has to cover a ~1000 nm sector:
     v_max_unamb = lambda / (4*PRI)  = +/-2.7 m/s
 
 Velocity aliases into the ±2.7 m/s range so Doppler is effectively
-unused for target matching in this profile — CLEARANCE relies on
+unused for target matching in this profile: CLEARANCE relies on
 range and beam-angle for track association. This is the profile
 shipping in the current CLEARANCE integration.
 
