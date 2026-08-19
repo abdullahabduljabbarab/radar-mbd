@@ -245,6 +245,16 @@ Output lands under `radar_ert_rtw/`. The five files CLEARANCE needs
 are `radar.c`, `radar.h`, `radar_types.h`, `radar_private.h`,
 `rtwtypes.h`, plus `rt_nonfinite.h/c` for the NaN handling.
 
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [docs/RADAR_MBD_DESIGN.md](docs/RADAR_MBD_DESIGN.md) | DSP chain design: waveform, MVDR beamformer, matched filter, Doppler FFT, CFAR. |
+| [docs/INTEGRATION.md](docs/INTEGRATION.md) | Runtime integration into CLEARANCE: per-radar state, I/Q cube synthesis, matching layer, EW hooks, waveform profiles. |
+| [docs/V_AND_V_PLAN.md](docs/V_AND_V_PLAN.md) | Verification and validation plan. |
+| [DEVLOG.md](DEVLOG.md) | Chronological engineering journal. |
+| [Requirements.md](Requirements.md) | Requirements traced to their verifying blocks. |
+
 ## Repository layout
 
 ```
