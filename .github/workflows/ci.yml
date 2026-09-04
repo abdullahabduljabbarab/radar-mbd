@@ -9,14 +9,15 @@
 # matlab-actions/setup-matlab@v2 batch tokens; Simulink Coder /
 # MATLAB Coder / Embedded Coder are not, so the codegen portion is
 # best-effort on public runners and green-guaranteed on a licensed
-# MATLAB Server (e.g. an in-house BAE runner).
+# MATLAB Server or self-hosted runner.
 #
-# Trigger: manual dispatch only, matching the autopilot-mbd and
-# CLEARANCE-side pipelines.
+# Trigger: every push, every PR, plus manual dispatch.
 
 name: CI
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
