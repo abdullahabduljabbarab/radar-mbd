@@ -11,13 +11,11 @@
 # best-effort on public runners and green-guaranteed on a licensed
 # MATLAB Server or self-hosted runner.
 #
-# Trigger: every push, every PR, plus manual dispatch.
+# Trigger: manual dispatch only.
 
 name: CI
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 jobs:
